@@ -1,16 +1,34 @@
 package main
 
 import (
-	"bytes"
 	"flag"
-	"io"
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
+	"time"
 )
 
-func main(){
-	flag.String("dest", "", "Ping destination")
+func ping(destination string) (string, error) {
+	stdout, err := exec.Command("ping", "-n", "1", destination).CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	re, err := regexp.Compile(`time=(\d)`)
+	if err != nil {
+		return "", err
+	}
+	res := re.FindSubmatch(stdout)
+	if res == nil {
+		return "", nil
+	}
+
+	return string(res[1]), nil
+}
+
+func main() {
+	count := flag.Int("n", 1, "count")
 	flag.Parse()
 
 	destination := flag.Arg(0)
@@ -19,13 +37,14 @@ func main(){
 		os.Exit(1)
 	}
 
-    cmd := exec.Command("ping", destination)
-	cmd.StdoutPipe()
-	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd.Stdout = io.MultiWriter(os.Stdout, &stdoutBuf)
-	cmd.Stderr = io.MultiWriter(os.Stderr, &stderrBuf)
-	err := cmd.Run()
-	if err != nil {
-		log.Fatalf("cmd.Run() failed with %s\n", err)
+	for i := *count; i > 0; i-- {
+		result, err := ping(destination)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("time=%s\n", result)
+		if i != 1 {
+			time.Sleep(time.Second)
+		}
 	}
 }
