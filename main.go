@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime"
+	"sync"
 	"time"
 )
 
@@ -46,14 +47,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	wg := sync.WaitGroup{}
+	ticker := time.NewTicker(1 * time.Second)
 	for i := *count; i > 0; i-- {
-		result, err := ping(destination)
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("time=%s\n", result)
-		if i != 1 {
-			time.Sleep(time.Second)
-		}
+		wg.Add(1)
+		go func() {
+			<- ticker.C
+			result, err := ping(destination)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			log.Printf("time=%sms\n", result)
+			wg.Done()
+		}()
 	}
+	wg.Wait()
 }
