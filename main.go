@@ -6,11 +6,20 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"time"
 )
 
 func ping(destination string) (string, error) {
-	stdout, err := exec.Command("ping", "-n", "1", destination).CombinedOutput()
+	var stdout []byte
+	var err error
+	
+	if runtime.GOOS == "windows" {
+		stdout, err = exec.Command("ping", "-n", "1", destination).CombinedOutput()
+	} else {
+		stdout, err = exec.Command("ping", "-w", "1", destination).CombinedOutput()
+	}
+
 	if err != nil {
 		return "", err
 	}
