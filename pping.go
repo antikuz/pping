@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"regexp"
 	"runtime"
 	"sync"
@@ -38,7 +40,10 @@ func ping(destination string) (string, error) {
 }
 
 func main() {
-	count := flag.Int("n", 1, "count")
+	count := flag.Int("n", 4, "count")
+	t := flag.Bool("t", false, `Ping the specified host until stopped.
+To stop - type Control-C.`)
+	
 	flag.Parse()
 
 	destination := flag.Arg(0)
@@ -47,20 +52,50 @@ func main() {
 		os.Exit(1)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	wg := sync.WaitGroup{}
 	ticker := time.NewTicker(1 * time.Second)
-	for i := *count; i > 0; i-- {
-		wg.Add(1)
-		go func() {
-			<- ticker.C
-			result, err := ping(destination)
-			if err != nil {
-				log.Fatal(err)
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	
+	go func(){
+		for _ = range c {
+			cancel()
+		}
+	}()
+	
+	if *t {
+		for {
+			select {
+			case <-ticker.C:
+				go func() {
+					result, err := ping(destination)
+					if err != nil {
+						log.Fatal(err)
+					}
+					log.Printf("time=%sms\n", result)
+				}()
+			case <-ctx.Done():
+				return
 			}
-
-			log.Printf("time=%sms\n", result)
-			wg.Done()
-		}()
+		}
+	} else {
+		for i := *count; i > 0; i-- {
+			select {
+			case <-ticker.C:
+				wg.Add(1)
+				go func() {
+					result, err := ping(destination)
+					if err != nil {
+						log.Fatal(err)
+					}
+					log.Printf("time=%sms\n", result)
+					wg.Done()
+				}()
+			case <-ctx.Done():
+				return
+			}
+		}
+		wg.Wait()
 	}
-	wg.Wait()
 }
