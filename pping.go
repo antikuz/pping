@@ -13,6 +13,13 @@ import (
 	"time"
 )
 
+type pingResult struct {
+	PingTime time.Time
+	Latency string
+}
+
+var pingResults = &[]pingResult{}
+
 func ping(destination string) (string, error) {
 	var stdout []byte
 	var err error
@@ -73,6 +80,11 @@ To stop - type Control-C.`)
 					if err != nil {
 						log.Fatal(err)
 					}
+					
+					*pingResults = append(*pingResults, pingResult{
+						PingTime: time.Now(),
+						Latency: result,
+					})
 					log.Printf("time=%sms\n", result)
 				}()
 			case <-ctx.Done():
@@ -89,6 +101,10 @@ To stop - type Control-C.`)
 					if err != nil {
 						log.Fatal(err)
 					}
+					*pingResults = append(*pingResults, pingResult{
+						PingTime: time.Now(),
+						Latency: result,
+					})
 					log.Printf("time=%sms\n", result)
 					wg.Done()
 				}()
