@@ -32,7 +32,7 @@ const myChart = new Chart(ctx, {
             y: {
                 beginAtZero: true,
                 ticks: {
-                    
+                    stepSize: 1
                 },
                 afterDataLimits(scale) {
                 scale.max += 3;
@@ -43,6 +43,12 @@ const myChart = new Chart(ctx, {
                 type: 'time',
                 time: {
                     parser: 'yyyy-MM-dd HH:mm:ss',
+                    displayFormats: {
+                        millisecond: "HH:mm:ss",
+                        second: "HH:mm:ss",
+                        minute: "HH:mm",
+                        hour: "HH:mm",
+                    },
                 },
             }
         },
