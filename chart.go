@@ -12,29 +12,39 @@ import (
 )
 
 var (
-    //go:embed chart
-    res embed.FS
+	//go:embed chart
+	res embed.FS
 )
 
 func openbrowser(file string) {
 	var err error
 	switch runtime.GOOS {
 	case "linux":
-	  err = exec.Command("xdg-open", file).Start()
+		err = exec.Command("xdg-open", file).Start()
 	case "windows":
-	  err = exec.Command("rundll32", "url.dll,FileProtocolHandler", file).Start()
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", file).Start()
 	case "darwin":
-	  err = exec.Command("open", file).Start()
+		err = exec.Command("open", file).Start()
 	default:
-	  err = fmt.Errorf("unsupported platform")
+		err = fmt.Errorf("unsupported platform")
 	}
 	if err != nil {
-	  log.Fatal(err)
+		log.Fatal(err)
 	}
 }
-  
+
 func renderPingPlot(pingResults *[]pingResult) {
 	chartminjs, err := res.ReadFile("chart/chart.min.js")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	chartjsadapterdatefnsbundleminjs, err := res.ReadFile("chart/chartjs-adapter-date-fns.bundle.min.js")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	hammerjs, err := res.ReadFile("chart/hammerjs@2.0.8.js")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,11 +53,11 @@ func renderPingPlot(pingResults *[]pingResult) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	template, err := template.ParseFS(res, "chart/main-template-load.html")
-    if err != nil {
-        log.Fatalln(err)
-    }
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	file, err := ioutil.TempFile(os.TempDir(), "ppingplot.*.html")
 	if err != nil {
@@ -55,14 +65,18 @@ func renderPingPlot(pingResults *[]pingResult) {
 	}
 	defer file.Close()
 
-	templateVars := struct{
-		Chartminjs string
-		Chartpluginzoomminjs string
-		PingResults []pingResult
+	templateVars := struct {
+		Chartminjs                       string
+		Chartjsadapterdatefnsbundleminjs string
+		Hammerjs                         string
+		Chartpluginzoomminjs             string
+		PingResults                      []pingResult
 	}{
-		Chartminjs: string(chartminjs),
-		Chartpluginzoomminjs: string(chartpluginzoomminjs),
-		PingResults: *pingResults,
+		Chartminjs:                       string(chartminjs),
+		Chartjsadapterdatefnsbundleminjs: string(chartjsadapterdatefnsbundleminjs),
+		Hammerjs:                         string(hammerjs),
+		Chartpluginzoomminjs:             string(chartpluginzoomminjs),
+		PingResults:                      *pingResults,
 	}
 
 	err = template.Execute(file, templateVars)
