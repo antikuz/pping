@@ -33,7 +33,7 @@ func openbrowser(file string) {
 	}
 }
 
-func renderPingPlot(pingResults *[]pingResult) {
+func renderPingChart(pingResults *[]pingResult) {
 	chartminjs, err := res.ReadFile("chart/chart.min.js")
 	if err != nil {
 		log.Fatal(err)
