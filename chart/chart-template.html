@@ -1,0 +1,75 @@
+<html>
+<head>
+<script>{{ .Chartminjs }}</script>
+<script>{{ .Chartjsadapterdatefnsbundleminjs }}</script>
+<script>{{ .Hammerjs }}</script>
+<script>{{ .Chartpluginzoomminjs }}</script>
+</head>
+<body>
+<div class="chart-container" style="position: relative; height:40vh; width:80vw">
+    <canvas id="myChart"></canvas>
+</div>
+<script>
+const ctx = document.getElementById('myChart').getContext('2d');
+const myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        datasets: [{
+            label: 'ping',
+            data: [
+                {{range $line := .PingResults -}}
+                { x: '{{ $line.PingTime.Format "2006-01-02 03:04:05" }}', y: {{ $line.Latency }} },
+                {{ end -}}
+            ],
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            borderColor: 'rgb(115, 191, 105)',
+            borderWidth: 2,
+        }]
+    },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    
+                },
+                afterDataLimits(scale) {
+                scale.max += 3;
+                }
+            },
+            x: {
+                display: true,
+                type: 'time',
+                time: {
+                    parser: 'yyyy-MM-dd HH:mm:ss',
+                },
+            }
+        },
+        plugins: {
+            zoom: {
+                zoom: {
+                    drag: {
+                        enabled: true,
+                        modifierKey: "ctrl"
+                    },
+                    wheel: {
+                        enabled: true,
+                    },
+                    pinch: {
+                        enabled: true
+                    },
+                    mode: "x",
+                },
+                pan: {
+                    enabled: true,
+                    mode: "x"
+                }
+            },
+        }
+    }
+
+});
+</script>
+</body>
+</html>

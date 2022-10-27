@@ -54,7 +54,7 @@ func renderPingPlot(pingResults *[]pingResult) {
 		log.Fatal(err)
 	}
 
-	template, err := template.ParseFS(res, "chart/main-template-load.html")
+	template, err := template.ParseFS(res, "chart/chart-template.html")
 	if err != nil {
 		log.Fatalln(err)
 	}
