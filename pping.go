@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -31,7 +32,7 @@ func ping(destination string) (string, error) {
 	}
 
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%v: %s", err, string(stdout))
 	}
 
 	re, err := regexp.Compile(`time=(\d)`)
