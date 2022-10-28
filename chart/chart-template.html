@@ -18,13 +18,28 @@ const myChart = new Chart(ctx, {
             label: 'ping',
             data: [
                 {{range $line := .PingResults -}}
+                {{ if ne $line.Latency "-1" }}
                 { x: '{{ $line.PingTime.Format "2006-01-02 03:04:05" }}', y: {{ $line.Latency }} },
+                {{ end }}
                 {{ end -}}
             ],
             pointRadius: 0,
             pointHoverRadius: 5,
             borderColor: 'rgb(115, 191, 105)',
             borderWidth: 2,
+        },{
+            type: 'bar',
+            label: 'false',
+            data: [
+                {{range $line := .PingResults -}}
+                {{ if eq $line.Latency "-1" }}
+                { x: '{{ $line.PingTime.Format "2006-01-02 03:04:05" }}', y: 10 },
+                {{ end }}
+                {{ end -}}
+            ],
+            backgroundColor: 'rgb(242, 73, 92)',
+            categoryPercentage: 1.0,
+            barPercentage: 1.0
         }]
     },
     options: {
