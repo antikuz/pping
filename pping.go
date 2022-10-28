@@ -27,7 +27,7 @@ func ping(destination string) (string, error) {
 	var err error
 	
 	if runtime.GOOS == "windows" {
-		stdout, err = exec.Command("ping", "-n", "1", destination).CombinedOutput()
+		stdout, err = exec.Command("ping", "-n", "1", "-w", "1000", destination).CombinedOutput()
 	} else {
 		stdout, err = exec.Command("ping", "-w", "1", destination).CombinedOutput()
 	}
