@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"regexp"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 )
@@ -35,7 +36,7 @@ func ping(destination string) (string, error) {
 		return "", fmt.Errorf("%v: %s", err, string(stdout))
 	}
 
-	re, err := regexp.Compile(`time=(\d)`)
+	re, err := regexp.Compile(`time[=<](\d)`)
 	if err != nil {
 		return "", err
 	}
@@ -46,6 +47,20 @@ func ping(destination string) (string, error) {
 
 	return string(res[1]), nil
 }
+
+func pingResultContainError(err error) bool {
+	switch{
+	case strings.Contains(err.Error(), "timed out"):
+		return false
+	case strings.Contains(err.Error(), "host unreachable"):
+		return false
+	case strings.Contains(err.Error(), "host unreachable"):
+		return false
+	default:
+		return true
+	}
+}
+
 
 func main() {
 	count := flag.Int("n", 4, "count")
@@ -81,14 +96,22 @@ To stop - type Control-C.`)
 				go func() {
 					result, err := ping(destination)
 					if err != nil {
-						log.Fatal(err)
+						if pingResultContainError(err) {
+							log.Fatal(err)
+						}
+						result = "-1"
 					}
 					
 					*pingResults = append(*pingResults, pingResult{
 						PingTime: time.Now(),
 						Latency: result,
 					})
-					log.Printf("time=%sms\n", result)
+
+					if result == "-1" {
+						log.Println("Request timed out.")
+					} else {
+						log.Printf("time=%sms", result)
+					}
 				}()
 			case <-ctx.Done():
 				return
@@ -102,8 +125,12 @@ To stop - type Control-C.`)
 				go func() {
 					result, err := ping(destination)
 					if err != nil {
-						log.Fatal(err)
+						if pingResultContainError(err) {
+							log.Fatal(err)
+						}
+						result = "-1"
 					}
+					
 					*pingResults = append(*pingResults, pingResult{
 						PingTime: time.Now(),
 						Latency: result,
