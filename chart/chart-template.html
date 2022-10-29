@@ -6,7 +6,7 @@
 <script>{{ .Chartpluginzoomminjs }}</script>
 </head>
 <body>
-<div class="chart-container" style="position: relative; height:40vh; width:80vw">
+<div class="chart-container" style="position: relative; width: 90%;">
     <canvas id="myChart"></canvas>
 </div>
 <script>
@@ -18,9 +18,9 @@ const myChart = new Chart(ctx, {
             label: 'ping',
             data: [
                 {{range $line := .PingResults -}}
-                {{ if ne $line.Latency "-1" }}
+                {{ if ne $line.Latency "-1" -}}
                 { x: '{{ $line.PingTime.Format "2006-01-02 03:04:05" }}', y: {{ $line.Latency }} },
-                {{ end }}
+                {{ end -}}
                 {{ end -}}
             ],
             pointRadius: 0,
@@ -32,9 +32,9 @@ const myChart = new Chart(ctx, {
             label: 'false',
             data: [
                 {{range $line := .PingResults -}}
-                {{ if eq $line.Latency "-1" }}
+                {{ if eq $line.Latency "-1" -}}
                 { x: '{{ $line.PingTime.Format "2006-01-02 03:04:05" }}', y: 10 },
-                {{ end }}
+                {{ end -}}
                 {{ end -}}
             ],
             backgroundColor: 'rgb(242, 73, 92)',
@@ -50,29 +50,40 @@ const myChart = new Chart(ctx, {
                     stepSize: 1
                 },
                 afterDataLimits(scale) {
-                scale.max += 3;
+                    scale.max *= 1.1;
                 }
             },
             x: {
                 display: true,
                 type: 'time',
                 time: {
+                    minUnit: "second",
+                    unitStepSize: 1,
                     parser: 'yyyy-MM-dd HH:mm:ss',
                     displayFormats: {
-                        millisecond: "HH:mm:ss",
                         second: "HH:mm:ss",
                         minute: "HH:mm",
-                        hour: "HH:mm",
+                        hour: "dd.MM HH:mm",
+                        day: "yyyy.MM.dd",
                     },
                 },
+                ticks: {
+                    stepSize: 1
+                },
+                grid: {
+                    offset: false
+                }
             }
         },
         plugins: {
+            title:{
+                display:true,
+                text: "Ping host: host"
+            },
             zoom: {
                 zoom: {
                     drag: {
                         enabled: true,
-                        modifierKey: "ctrl"
                     },
                     wheel: {
                         enabled: true,
@@ -84,12 +95,12 @@ const myChart = new Chart(ctx, {
                 },
                 pan: {
                     enabled: true,
-                    mode: "x"
+                    mode: "x",
+                    modifierKey: "ctrl"
                 }
-            },
+            }
         }
     }
-
 });
 </script>
 </body>
