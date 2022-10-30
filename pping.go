@@ -35,14 +35,20 @@ func ping(destination string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%v: %s", err, string(stdout))
 	}
-
+	
 	re, err := regexp.Compile(`time[=<](\d)`)
 	if err != nil {
 		return "", err
 	}
+	
 	res := re.FindSubmatch(stdout)
 	if res == nil {
 		return "", nil
+	}
+
+	if string(res[1]) == "" {
+		err = fmt.Errorf("%s", string(stdout))
+		return "", err
 	}
 
 	return string(res[1]), nil
@@ -54,7 +60,7 @@ func pingResultContainError(err error) bool {
 		return false
 	case strings.Contains(err.Error(), "host unreachable"):
 		return false
-	case strings.Contains(err.Error(), "host unreachable"):
+	case strings.Contains(err.Error(), "0 received"):
 		return false
 	default:
 		return true
