@@ -33,7 +33,7 @@ const myChart = new Chart(ctx, {
             data: [
                 {{range $line := .PingResults -}}
                 {{ if eq $line.Latency -1 -}}
-                { x: '{{ $line.PingTime.Format "2006-01-02 03:04:05" }}', y: 10 },
+                { x: '{{ $line.PingTime.Format "2006-01-02 03:04:05" }}', y: {{ $.PingStatistic.Max }} },
                 {{ end -}}
                 {{ end -}}
             ],

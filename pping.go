@@ -29,6 +29,7 @@ type pingStatistic struct {
 }
 
 var pingResults = &[]pingResult{}
+var pingStatistics = &pingStatistic{}
 
 func ping(destination string) (int, error) {
 	var stdout []byte
@@ -79,6 +80,24 @@ func pingResultContainError(err error) bool {
 	}
 }
 
+func pingStatisticUpdate(ps *pingStatistic, result int) {
+	ps.Transmitted += 1
+	if result == -1 {
+		return
+	}
+	ps.Received += 1
+	if result < ps.Min {
+		ps.Min = result
+	}
+	if result > ps.Max {
+		ps.Max = result
+	}
+}
+
+func pingStatisticLine(ps *pingStatistic) string {
+	packetLoss := (float64(ps.Transmitted - ps.Received)/float64(ps.Transmitted)) * 100
+	return fmt.Sprintf("%d packets transmitted, %d received, %.0f%% packet loss", ps.Transmitted, ps.Received, packetLoss)
+}
 
 func main() {
 	count := flag.Int("n", 4, "count")
@@ -99,7 +118,7 @@ To stop - type Control-C.`)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
-	defer renderPingChart(pingResults)
+	defer renderPingChart(pingResults, pingStatistics)
 
 	go func() {
 		for range c {
@@ -124,11 +143,13 @@ To stop - type Control-C.`)
 						PingTime: time.Now(),
 						Latency:  result,
 					})
-
+					pingStatisticUpdate(pingStatistics, result)
 					if result == -1 {
-						log.Println("Request timed out.")
+						log.Printf("Request timed out.%s", strings.Repeat(" ", 60))
+						fmt.Printf("%s\r", pingStatisticLine(pingStatistics))
 					} else {
-						log.Printf("time=%dms", result)
+						log.Printf("time=%dms%s", result, strings.Repeat(" ", 60))
+						fmt.Printf("%s\r", pingStatisticLine(pingStatistics))
 					}
 				}()
 			case <-ctx.Done():
