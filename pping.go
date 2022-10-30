@@ -141,7 +141,12 @@ To stop - type Control-C.`)
 						PingTime: time.Now(),
 						Latency: result,
 					})
-					log.Printf("time=%sms\n", result)
+
+					if result == "-1" {
+						log.Println("Request timed out.")
+					} else {
+						log.Printf("time=%sms", result)
+					}
 					wg.Done()
 				}()
 			case <-ctx.Done():
