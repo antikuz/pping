@@ -18,7 +18,14 @@ import (
 
 type pingResult struct {
 	PingTime time.Time
-	Latency int
+	Latency  int
+}
+
+type pingStatistic struct {
+	Min         int
+	Max         int
+	Transmitted int
+	Received    int
 }
 
 var pingResults = &[]pingResult{}
@@ -26,7 +33,7 @@ var pingResults = &[]pingResult{}
 func ping(destination string) (int, error) {
 	var stdout []byte
 	var err error
-	
+
 	if runtime.GOOS == "windows" {
 		stdout, err = exec.Command("ping", "-n", "1", "-w", "1000", destination).CombinedOutput()
 	} else {
@@ -36,12 +43,12 @@ func ping(destination string) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("%v: %s", err, string(stdout))
 	}
-	
+
 	re, err := regexp.Compile(`time[=<](\d)`)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	res := re.FindSubmatch(stdout)
 	if res == nil {
 		return 0, nil
@@ -54,13 +61,13 @@ func ping(destination string) (int, error) {
 	latency, err := strconv.Atoi(string(res[1]))
 	if err != nil {
 		return 0, err
-	}	
+	}
 
 	return latency, nil
 }
 
 func pingResultContainError(err error) bool {
-	switch{
+	switch {
 	case strings.Contains(err.Error(), "timed out"):
 		return false
 	case strings.Contains(err.Error(), "host unreachable"):
@@ -77,7 +84,7 @@ func main() {
 	count := flag.Int("n", 4, "count")
 	t := flag.Bool("t", false, `Ping the specified host until stopped.
 To stop - type Control-C.`)
-	
+
 	flag.Parse()
 
 	destination := flag.Arg(0)
@@ -91,15 +98,15 @@ To stop - type Control-C.`)
 	ticker := time.NewTicker(1 * time.Second)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	
+
 	defer renderPingChart(pingResults)
-	
-	go func(){
+
+	go func() {
 		for range c {
 			cancel()
 		}
 	}()
-	
+
 	if *t {
 		for {
 			select {
@@ -112,10 +119,10 @@ To stop - type Control-C.`)
 						}
 						result = -1
 					}
-					
+
 					*pingResults = append(*pingResults, pingResult{
 						PingTime: time.Now(),
-						Latency: result,
+						Latency:  result,
 					})
 
 					if result == -1 {
@@ -141,10 +148,10 @@ To stop - type Control-C.`)
 						}
 						result = -1
 					}
-					
+
 					*pingResults = append(*pingResults, pingResult{
 						PingTime: time.Now(),
-						Latency: result,
+						Latency:  result,
 					})
 
 					if result == -1 {
