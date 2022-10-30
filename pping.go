@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -17,12 +18,12 @@ import (
 
 type pingResult struct {
 	PingTime time.Time
-	Latency string
+	Latency int
 }
 
 var pingResults = &[]pingResult{}
 
-func ping(destination string) (string, error) {
+func ping(destination string) (int, error) {
 	var stdout []byte
 	var err error
 	
@@ -33,25 +34,29 @@ func ping(destination string) (string, error) {
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("%v: %s", err, string(stdout))
+		return 0, fmt.Errorf("%v: %s", err, string(stdout))
 	}
 	
 	re, err := regexp.Compile(`time[=<](\d)`)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 	
 	res := re.FindSubmatch(stdout)
 	if res == nil {
-		return "", nil
+		return 0, nil
 	}
 
 	if string(res[1]) == "" {
 		err = fmt.Errorf("%s", string(stdout))
-		return "", err
+		return 0, err
 	}
+	latency, err := strconv.Atoi(string(res[1]))
+	if err != nil {
+		return 0, err
+	}	
 
-	return string(res[1]), nil
+	return latency, nil
 }
 
 func pingResultContainError(err error) bool {
@@ -105,7 +110,7 @@ To stop - type Control-C.`)
 						if pingResultContainError(err) {
 							log.Fatal(err)
 						}
-						result = "-1"
+						result = -1
 					}
 					
 					*pingResults = append(*pingResults, pingResult{
@@ -113,10 +118,10 @@ To stop - type Control-C.`)
 						Latency: result,
 					})
 
-					if result == "-1" {
+					if result == -1 {
 						log.Println("Request timed out.")
 					} else {
-						log.Printf("time=%sms", result)
+						log.Printf("time=%dms", result)
 					}
 				}()
 			case <-ctx.Done():
@@ -134,7 +139,7 @@ To stop - type Control-C.`)
 						if pingResultContainError(err) {
 							log.Fatal(err)
 						}
-						result = "-1"
+						result = -1
 					}
 					
 					*pingResults = append(*pingResults, pingResult{
@@ -142,10 +147,10 @@ To stop - type Control-C.`)
 						Latency: result,
 					})
 
-					if result == "-1" {
+					if result == -1 {
 						log.Println("Request timed out.")
 					} else {
-						log.Printf("time=%sms", result)
+						log.Printf("time=%dms", result)
 					}
 					wg.Done()
 				}()
