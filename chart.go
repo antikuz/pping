@@ -33,7 +33,7 @@ func openbrowser(file string) {
 	}
 }
 
-func renderPingChart(pingResults *[]pingResult, ps *pingStatistic) {
+func renderPingChart(pingResults *[]pingResult, ps *pingStatistic, destination string) {
 	chartminjs, err := res.ReadFile("chart/chart.min.js")
 	if err != nil {
 		log.Fatal(err)
@@ -72,6 +72,7 @@ func renderPingChart(pingResults *[]pingResult, ps *pingStatistic) {
 		Chartpluginzoomminjs             string
 		PingResults                      []pingResult
 		PingStatistic                    pingStatistic
+		Destination                      string
 	}{
 		Chartminjs:                       string(chartminjs),
 		Chartjsadapterdatefnsbundleminjs: string(chartjsadapterdatefnsbundleminjs),
@@ -79,6 +80,7 @@ func renderPingChart(pingResults *[]pingResult, ps *pingStatistic) {
 		Chartpluginzoomminjs:             string(chartpluginzoomminjs),
 		PingResults:                      *pingResults,
 		PingStatistic:                    *ps,
+		Destination:                      destination,
 	}
 
 	err = template.Execute(file, templateVars)

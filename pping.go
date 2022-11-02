@@ -118,7 +118,7 @@ To stop - type Control-C.`)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
-	defer renderPingChart(pingResults, pingStatistics)
+	defer renderPingChart(pingResults, pingStatistics, destination)
 
 	go func() {
 		for range c {
