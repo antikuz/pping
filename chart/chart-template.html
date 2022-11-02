@@ -6,12 +6,12 @@
 <script>{{ .Chartpluginzoomminjs }}</script>
 </head>
 <body>
-<div class="chart-container" style="position: relative; width: 90%;">
-    <canvas id="myChart"></canvas>
+<div style="position: relative; width: 90%;">
+    <canvas id="pingChart"></canvas>
 </div>
 <script>
-const ctx = document.getElementById('myChart').getContext('2d');
-const myChart = new Chart(ctx, {
+const ctx = document.getElementById('pingChart').getContext('2d');
+const pingChart = new Chart(ctx, {
     type: 'line',
     data: {
         datasets: [{
@@ -26,10 +26,11 @@ const myChart = new Chart(ctx, {
             pointRadius: 0,
             pointHoverRadius: 5,
             borderColor: 'rgb(115, 191, 105)',
+            backgroundColor: 'rgb(115, 191, 105)',
             borderWidth: 2,
         },{
             type: 'bar',
-            label: 'false',
+            label: 'timeout',
             data: [
                 {{range $line := .PingResults -}}
                 {{ if eq $line.Latency -1 -}}
@@ -45,6 +46,10 @@ const myChart = new Chart(ctx, {
     options: {
         scales: {
             y: {
+                title: {
+                    display: true,
+                    text: "Latency (ms)"
+                },
                 beginAtZero: true,
                 ticks: {
                     stepSize: 1
@@ -54,7 +59,10 @@ const myChart = new Chart(ctx, {
                 }
             },
             x: {
-                display: true,
+                title: {
+                    display: true,
+                    text: "Time"
+                },
                 type: 'time',
                 time: {
                     minUnit: "second",
@@ -78,7 +86,7 @@ const myChart = new Chart(ctx, {
         plugins: {
             title:{
                 display:true,
-                text: "Ping host: host"
+                text: "Ping: {{ .Destination }}"
             },
             zoom: {
                 zoom: {
