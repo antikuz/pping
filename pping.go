@@ -106,12 +106,19 @@ func pingStatisticLine(ps *pingStatistic) string {
 }
 
 func main() {
+	flag.Usage = func() {
+		fmt.Print(`Usage of pping:
+    -t             Ping the specified host until stopped. To stop - type Control-C.
+    -n count       Number of echo requests to send.
+    -w timeout     Timeout in milliseconds to wait for each reply.
+    `)
+		os.Exit(0)
+    }
 	flag.Parse()
 
 	destination := flag.Arg(0)
 	if destination == "" {
 		flag.Usage()
-		os.Exit(1)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
