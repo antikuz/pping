@@ -28,17 +28,23 @@ type pingStatistic struct {
 	Received    int
 }
 
-var pingResults = &[]pingResult{}
-var pingStatistics = &pingStatistic{}
+var (
+	t = flag.Bool("t", false, "Ping the specified host until stopped. To stop - type Control-C.")
+	n = flag.Int("n", 4, "Number of echo requests to send.")
+	w = flag.String("w", "1000", "Timeout in milliseconds to wait for each reply.")
 
-func ping(w string, destination string) (int, error) {
+	pingResults = &[]pingResult{}
+	pingStatistics = &pingStatistic{}
+)
+
+func ping(destination string) (int, error) {
 	var stdout []byte
 	var err error
 
 	if runtime.GOOS == "windows" {
-		stdout, err = exec.Command("ping", "-n", "1", "-w", w, destination).CombinedOutput()
+		stdout, err = exec.Command("ping", "-n", "1", "-w", *w, destination).CombinedOutput()
 	} else {
-		stdout, err = exec.Command("ping", "-w", "1", "-W", w, destination).CombinedOutput()
+		stdout, err = exec.Command("ping", "-w", "1", "-W", *w, destination).CombinedOutput()
 	}
 
 	if err != nil {
@@ -100,10 +106,6 @@ func pingStatisticLine(ps *pingStatistic) string {
 }
 
 func main() {
-	t := flag.Bool("t", false, "Ping the specified host until stopped. To stop - type Control-C.")
-	n := flag.Int("n", 4, "Number of echo requests to send.")
-	w := flag.String("w", "1000", "Timeout in milliseconds to wait for each reply.")
-
 	flag.Parse()
 
 	destination := flag.Arg(0)
@@ -131,7 +133,7 @@ func main() {
 			select {
 			case <-ticker.C:
 				go func() {
-					result, err := ping(*w, destination)
+					result, err := ping(destination)
 					if err != nil {
 						if pingResultContainError(err) {
 							log.Fatal(err)
@@ -162,7 +164,7 @@ func main() {
 			case <-ticker.C:
 				wg.Add(1)
 				go func() {
-					result, err := ping(*w, destination)
+					result, err := ping(destination)
 					if err != nil {
 						if pingResultContainError(err) {
 							log.Fatal(err)
