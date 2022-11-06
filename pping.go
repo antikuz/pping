@@ -32,6 +32,7 @@ var (
 	t = flag.Bool("t", false, "Ping the specified host until stopped. To stop - type Control-C.")
 	n = flag.Int("n", 4, "Number of echo requests to send.")
 	w = flag.String("w", "1000", "Timeout in milliseconds to wait for each reply.")
+	g = flag.Bool("g", false, "Generate web graph after exit.")
 
 	pingResults = &[]pingResult{}
 	pingStatistics = &pingStatistic{}
@@ -111,6 +112,7 @@ func main() {
     -t             Ping the specified host until stopped. To stop - type Control-C.
     -n count       Number of echo requests to send.
     -w timeout     Timeout in milliseconds to wait for each reply.
+	-g graph       Generate web graph after exit.
     `)
 		os.Exit(0)
     }
@@ -127,7 +129,9 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
-	defer renderPingChart(pingResults, pingStatistics, destination)
+	if *g {
+		defer renderPingChart(pingResults, pingStatistics, destination)
+	}
 
 	go func() {
 		for range c {
