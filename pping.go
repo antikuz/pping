@@ -38,7 +38,7 @@ func ping(destination string) (int, error) {
 	if runtime.GOOS == "windows" {
 		stdout, err = exec.Command("ping", "-n", "1", "-w", "1000", destination).CombinedOutput()
 	} else {
-		stdout, err = exec.Command("ping", "-w", "1", destination).CombinedOutput()
+		stdout, err = exec.Command("ping", "-w", "1", "-W", "1000", destination).CombinedOutput()
 	}
 
 	if err != nil {
@@ -100,9 +100,9 @@ func pingStatisticLine(ps *pingStatistic) string {
 }
 
 func main() {
-	count := flag.Int("n", 4, "count")
-	t := flag.Bool("t", false, `Ping the specified host until stopped.
-To stop - type Control-C.`)
+	t := flag.Bool("t", false, "Ping the specified host until stopped. To stop - type Control-C.")
+	n := flag.Int("n", 4, "Number of echo requests to send.")
+
 
 	flag.Parse()
 
@@ -157,7 +157,7 @@ To stop - type Control-C.`)
 			}
 		}
 	} else {
-		for i := *count; i > 0; i-- {
+		for i := *n; i > 0; i-- {
 			select {
 			case <-ticker.C:
 				wg.Add(1)
