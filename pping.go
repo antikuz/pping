@@ -31,8 +31,10 @@ type pingStatistic struct {
 var (
 	t = flag.Bool("t", false, "Ping the specified host until stopped. To stop - type Control-C.")
 	n = flag.Int("n", 4, "Number of echo requests to send.")
+	s = flag.Int("s", 32, "Send buffer size.")
 	w = flag.String("w", "1000", "Timeout in milliseconds to wait for each reply.")
 	g = flag.Bool("g", false, "Generate web graph after exit.")
+
 
 	pingResults = &[]pingResult{}
 	pingStatistics = &pingStatistic{}
@@ -43,9 +45,11 @@ func ping(destination string) (int, error) {
 	var err error
 
 	if runtime.GOOS == "windows" {
-		stdout, err = exec.Command("ping", "-n", "1", "-w", *w, destination).CombinedOutput()
+		size := strconv.Itoa(*s)
+		stdout, err = exec.Command("ping", "-n", "1", "-w", *w, "-l", size, destination).CombinedOutput()
 	} else {
-		stdout, err = exec.Command("ping", "-w", "1", "-W", *w, destination).CombinedOutput()
+		size := strconv.Itoa(*s - 8)
+		stdout, err = exec.Command("ping", "-w", "1", "-W", *w, "-s", size, destination).CombinedOutput()
 	}
 
 	if err != nil {
@@ -133,6 +137,7 @@ func main() {
 		fmt.Print(`Usage of pping:
     -t             Ping the specified host until stopped. To stop - type Control-C.
     -n count       Number of echo requests to send.
+    -s size        Send buffer size.
     -w timeout     Timeout in milliseconds to wait for each reply.
     -g graph       Generate web graph after exit.
     `)
