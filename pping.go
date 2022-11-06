@@ -106,6 +106,28 @@ func pingStatisticLine(ps *pingStatistic) string {
 	return fmt.Sprintf("%d packets transmitted, %d received, %.0f%% packet loss", ps.Transmitted, ps.Received, packetLoss)
 }
 
+func pingResultProcessing(result int, err error) {
+	if err != nil {
+		if pingResultContainError(err) {
+			log.Fatal(err)
+		}
+		result = -1
+	}
+
+	*pingResults = append(*pingResults, pingResult{
+		PingTime: time.Now(),
+		Latency:  result,
+	})
+	pingStatisticUpdate(pingStatistics, result)
+	if result == -1 {
+		log.Printf("Request timed out.%s", strings.Repeat(" ", 60))
+		fmt.Printf("%s\r", pingStatisticLine(pingStatistics))
+	} else {
+		log.Printf("time=%dms%s", result, strings.Repeat(" ", 60))
+		fmt.Printf("%s\r", pingStatisticLine(pingStatistics))
+	}
+}
+
 func main() {
 	flag.Usage = func() {
 		fmt.Print(`Usage of pping:
@@ -145,25 +167,7 @@ func main() {
 			case <-ticker.C:
 				go func() {
 					result, err := ping(destination)
-					if err != nil {
-						if pingResultContainError(err) {
-							log.Fatal(err)
-						}
-						result = -1
-					}
-
-					*pingResults = append(*pingResults, pingResult{
-						PingTime: time.Now(),
-						Latency:  result,
-					})
-					pingStatisticUpdate(pingStatistics, result)
-					if result == -1 {
-						log.Printf("Request timed out.%s", strings.Repeat(" ", 60))
-						fmt.Printf("%s\r", pingStatisticLine(pingStatistics))
-					} else {
-						log.Printf("time=%dms%s", result, strings.Repeat(" ", 60))
-						fmt.Printf("%s\r", pingStatisticLine(pingStatistics))
-					}
+					pingResultProcessing(result, err)
 				}()
 			case <-ctx.Done():
 				return
@@ -176,23 +180,7 @@ func main() {
 				wg.Add(1)
 				go func() {
 					result, err := ping(destination)
-					if err != nil {
-						if pingResultContainError(err) {
-							log.Fatal(err)
-						}
-						result = -1
-					}
-
-					*pingResults = append(*pingResults, pingResult{
-						PingTime: time.Now(),
-						Latency:  result,
-					})
-
-					if result == -1 {
-						log.Println("Request timed out.")
-					} else {
-						log.Printf("time=%dms", result)
-					}
+					pingResultProcessing(result, err)
 					wg.Done()
 				}()
 			case <-ctx.Done():
