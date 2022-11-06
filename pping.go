@@ -134,7 +134,7 @@ func main() {
     -t             Ping the specified host until stopped. To stop - type Control-C.
     -n count       Number of echo requests to send.
     -w timeout     Timeout in milliseconds to wait for each reply.
-	-g graph       Generate web graph after exit.
+    -g graph       Generate web graph after exit.
     `)
 		os.Exit(0)
     }
