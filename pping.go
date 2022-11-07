@@ -142,10 +142,10 @@ func pingResultProcessing(result regexpResult, err error) {
 	})
 	pingStatisticUpdate(pingStatistics, result.time)
 	if result.time == -1 {
-		log.Printf("Request timed out.%s", strings.Repeat(" ", 60))
+		log.Printf("Request timed out%s", strings.Repeat(" ", 40))
 		fmt.Printf("%s\r", pingStatisticLine(pingStatistics))
 	} else {
-		log.Printf("Reply from %s: bytes=%d time=%dms TTL=%d%s", result.target, result.bytes, result.time, result.ttl, strings.Repeat(" ", 60))
+		log.Printf("Reply from %s: bytes=%d time=%dms TTL=%d", result.target, result.bytes, result.time, result.ttl)
 		fmt.Printf("%s\r", pingStatisticLine(pingStatistics))
 	}
 }
