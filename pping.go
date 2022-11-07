@@ -39,7 +39,7 @@ var (
 	t = flag.Bool("t", false, "Ping the specified host until stopped. To stop - type Control-C.")
 	n = flag.Int("n", 4, "Number of echo requests to send.")
 	s = flag.Int("s", 32, "Send buffer size.")
-	w = flag.String("w", "1000", "Timeout in milliseconds to wait for each reply.")
+	w = flag.Int("w", 1000, "Timeout in milliseconds to wait for each reply.")
 	g = flag.Bool("g", false, "Generate web graph after exit.")
 
 	pingResults    = &[]pingResult{}
@@ -53,10 +53,10 @@ func ping(destination string) (*regexpResult, error) {
 
 	if runtime.GOOS == "windows" {
 		size := strconv.Itoa(*s)
-		stdout, err = exec.Command("ping", "-n", "1", "-w", *w, "-l", size, destination).CombinedOutput()
+		stdout, err = exec.Command("ping", "-n", "1", "-w", strconv.Itoa(*w), "-l", size, destination).CombinedOutput()
 	} else {
 		size := strconv.Itoa(*s - 8)
-		stdout, err = exec.Command("ping", "-n", "-w", "1", "-W", *w, "-s", size, destination).CombinedOutput()
+		stdout, err = exec.Command("ping", "-n", "-w", "1", "-W", strconv.Itoa(*w), "-s", size, destination).CombinedOutput()
 	}
 
 	if err != nil {
@@ -176,7 +176,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := sync.WaitGroup{}
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(time.Duration(*w) * time.Millisecond)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
