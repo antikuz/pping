@@ -28,6 +28,13 @@ type pingStatistic struct {
 	Received    int
 }
 
+type regexpResult struct {
+	target string
+	bytes  int
+	time   int
+	ttl    int
+}
+
 var (
 	t = flag.Bool("t", false, "Ping the specified host until stopped. To stop - type Control-C.")
 	n = flag.Int("n", 4, "Number of echo requests to send.")
@@ -35,12 +42,12 @@ var (
 	w = flag.String("w", "1000", "Timeout in milliseconds to wait for each reply.")
 	g = flag.Bool("g", false, "Generate web graph after exit.")
 
-
-	pingResults = &[]pingResult{}
+	pingResults    = &[]pingResult{}
 	pingStatistics = &pingStatistic{}
+	re             *regexp.Regexp
 )
 
-func ping(destination string) (int, error) {
+func ping(destination string) (*regexpResult, error) {
 	var stdout []byte
 	var err error
 
@@ -49,33 +56,44 @@ func ping(destination string) (int, error) {
 		stdout, err = exec.Command("ping", "-n", "1", "-w", *w, "-l", size, destination).CombinedOutput()
 	} else {
 		size := strconv.Itoa(*s - 8)
-		stdout, err = exec.Command("ping", "-w", "1", "-W", *w, "-s", size, destination).CombinedOutput()
+		stdout, err = exec.Command("ping", "-n", "-w", "1", "-W", *w, "-s", size, destination).CombinedOutput()
 	}
 
 	if err != nil {
-		return 0, fmt.Errorf("%v: %s", err, string(stdout))
+		return nil, fmt.Errorf("%v: %s", err, string(stdout))
 	}
 
-	re, err := regexp.Compile(`time[=<](\d)`)
+	match := re.FindStringSubmatch(string(stdout))
+	regexpMap := make(map[string]string)
+	for i, name := range re.SubexpNames() {
+		if i != 0 && name != "" {
+			regexpMap[name] = match[i]
+		}
+	}
+
+	bytes, err := strconv.Atoi(regexpMap["bytes"])
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	res := re.FindSubmatch(stdout)
-	if res == nil {
-		return 0, nil
-	}
-
-	if string(res[1]) == "" {
-		err = fmt.Errorf("%s", string(stdout))
-		return 0, err
-	}
-	latency, err := strconv.Atoi(string(res[1]))
+	time, err := strconv.Atoi(regexpMap["time"])
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return latency, nil
+	ttl, err := strconv.Atoi(regexpMap["ttl"])
+	if err != nil {
+		return nil, err
+	}
+
+	reResult := &regexpResult{
+		target: regexpMap["target"],
+		bytes:  bytes,
+		time:   time,
+		ttl:    ttl,
+	}
+
+	return reResult, nil
 }
 
 func pingResultContainError(err error) bool {
@@ -106,28 +124,28 @@ func pingStatisticUpdate(ps *pingStatistic, result int) {
 }
 
 func pingStatisticLine(ps *pingStatistic) string {
-	packetLoss := (float64(ps.Transmitted - ps.Received)/float64(ps.Transmitted)) * 100
+	packetLoss := (float64(ps.Transmitted-ps.Received) / float64(ps.Transmitted)) * 100
 	return fmt.Sprintf("%d packets transmitted, %d received, %.0f%% packet loss", ps.Transmitted, ps.Received, packetLoss)
 }
 
-func pingResultProcessing(result int, err error) {
+func pingResultProcessing(result regexpResult, err error) {
 	if err != nil {
 		if pingResultContainError(err) {
 			log.Fatal(err)
 		}
-		result = -1
+		result.time = -1
 	}
 
 	*pingResults = append(*pingResults, pingResult{
 		PingTime: time.Now(),
-		Latency:  result,
+		Latency:  result.time,
 	})
-	pingStatisticUpdate(pingStatistics, result)
-	if result == -1 {
+	pingStatisticUpdate(pingStatistics, result.time)
+	if result.time == -1 {
 		log.Printf("Request timed out.%s", strings.Repeat(" ", 60))
 		fmt.Printf("%s\r", pingStatisticLine(pingStatistics))
 	} else {
-		log.Printf("time=%dms%s", result, strings.Repeat(" ", 60))
+		log.Printf("Reply from %s: bytes=%d time=%dms TTL=%d%s", result.target, result.bytes, result.time, result.ttl, strings.Repeat(" ", 60))
 		fmt.Printf("%s\r", pingStatisticLine(pingStatistics))
 	}
 }
@@ -142,12 +160,18 @@ func main() {
     -g graph       Generate web graph after exit.
     `)
 		os.Exit(0)
-    }
+	}
 	flag.Parse()
 
 	destination := flag.Arg(0)
 	if destination == "" {
 		flag.Usage()
+	}
+
+	if runtime.GOOS == "windows" {
+		re = regexp.MustCompile(`from (?P<target>.*): bytes=(?P<bytes>\d+) time=(?P<time>\d+).*TTL=(?P<ttl>\d+)`)
+	} else {
+		re = regexp.MustCompile(`(?P<bytes>\d+) bytes from (?P<target>.*):.*ttl=(?P<ttl>\d+) time=(?P<time>\d+)`)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -172,7 +196,7 @@ func main() {
 			case <-ticker.C:
 				go func() {
 					result, err := ping(destination)
-					pingResultProcessing(result, err)
+					pingResultProcessing(*result, err)
 				}()
 			case <-ctx.Done():
 				return
@@ -185,7 +209,7 @@ func main() {
 				wg.Add(1)
 				go func() {
 					result, err := ping(destination)
-					pingResultProcessing(result, err)
+					pingResultProcessing(*result, err)
 					wg.Done()
 				}()
 			case <-ctx.Done():
