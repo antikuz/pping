@@ -18,3 +18,14 @@ func TestPingResultContainError(t *testing.T) {
 	assert.Equal(t, false, pingResultContainError(unreachableErr))
 	assert.Equal(t, true, pingResultContainError(unknownDnsErr))
 }
+
+func TestPingStatisticLine(t *testing.T) {
+	ps := &pingStatistic{
+		Min: 0,
+		Max: 10,
+		Transmitted: 100,
+		Received: 70,
+	}
+	result := "100 packets transmitted, 70 received, 30% packet loss"
+	assert.Equal(t, result, pingStatisticLine(ps))
+}
